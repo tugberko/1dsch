@@ -18,3 +18,10 @@ x0    = 3.0 # center of initial gaussian wave-packet
 A = 1.0 / (sigma * np.sqrt(np.pi)) # normalization constant
 
 psi0 = np.sqrt(A) * np.exp(-(x-x0)**2 / (2.0 * sigma**2)) * np.exp(1j * kx * x)
+
+print(psi0)
+
+plt.plot(x, np.abs(psi0)**2, label=r"$\psi(x,0)$")
+plt.plot(x, V*0.01, label=r"$V(x)$")
+plt.legend(loc='upper right')
+plt.show()
