@@ -3,27 +3,47 @@ import scipy.sparse
 import matplotlib.pyplot as plt
 import numpy as np
 
-hbar = 1
-m = 1
 
-dt = 1e-3
-halfdt = dt*0.5
 
-dx    = 2*1e-2                # spatial separation
-x     = np.arange(-25, 25, dx)       # spatial grid points
+# Simulation Parameters
 
-T=1
-omega = 2 * np.pi / T
+dt = 1e-3   # Temporal seperation
 
+dx = 2e-2   # Spatial seperation
+
+L = 50      # Spatial size, symmetric with respect to x=0
+
+# Derived Simulation Parameters
+
+halfdt = dt*0.5 # Name says it all
+
+kappa = 2*(np.pi)/dx # Upper limit for force constant (k).
+
+x = np.arange(-0.5*L, 0.5*L, dx)    # Spatial grid points
+
+
+
+
+
+
+# Utility functions
+
+
+# This function outputs an identity matrix which is
+# compatible with the spatial grid points vector (x).
 def IdentityMatrix():
     I = np.zeros((x.size, x.size))
     for i in range(x.size):
         I[i][i] = 1
     return I
 
+# This function defines the potential as a function of
+# position.
 def Potential(pos):
-    return 0.5*m*(omega**2)*(pos**2)
+    return 0.5*(pos**2)
 
+# This function outputs a matrix representing the kinetic
+# energy part of the Hamiltonian (Eqn.13).
 def TMatrix():
     result = np.zeros((x.size,x.size))
     for i in range(x.size):
@@ -31,9 +51,10 @@ def TMatrix():
     for i in range(x.size-1):
         result[i][i+1]=1
         result[i+1][i]=1
-    return ( -(hbar**2)/(2*m) ) * (1/dx**2) * result
+    return (-1/dx**2) * result
 
-
+# This function outputs a matrix representing the potential
+# energy part of the Hamiltonian (Eqn.13).
 def VMatrix():
     result = np.zeros((x.size,x.size))
     for i in range(x.size):
@@ -43,50 +64,43 @@ def VMatrix():
 def HMatrix():
     return TMatrix() + VMatrix()
 
-def AnnihilationMatrix():
-    result = np.zeros((x.size,x.size))
-    for i in range(x.size-1):
-        result[i][i+1] = np.sqrt(i+1)
-    return result
 
-def CreationMatrix():
-    result = np.zeros((x.size,x.size))
-    for i in range(x.size-1):
-        result[i+1][i] = np.sqrt(i+1)
-    return result
-
+# This function outputs the left hand side multiplier
+# in the Eqn. 17
+#
+# TODO: Pade approximation?
 def LHS():
     first_term = IdentityMatrix()
-    second_term = (1j*HMatrix()*dt)/(2*hbar)
+    second_term = (1j*HMatrix()*dt)/(2)
 
     return first_term + second_term
 
+# This function outputs the right hand side multiplier
+# in the Eqn. 17
+#
+# TODO: Pade approximation?
 def RHS():
     first_term = IdentityMatrix()
-    second_term = (1j*HMatrix()*dt)/(2*hbar)
+    second_term = (1j*HMatrix()*dt)/(2)
 
     return first_term - second_term
+
+
 
 LHS = LHS()
 RHS = RHS()
 InverseOfLHS = np.linalg.inv(LHS)
+
+# U is the time evolution matrix. To keep things time efficient,
+# I initialize this matrix once and use it as necessary.
 U = np.matmul(InverseOfLHS, RHS)
 
+# This function applies time evolution to a given wavefunction.
 def Evolve(some_psi):
     return np.matmul(U, some_psi)
 
 
-def Gaussian():
-    kx    = 0.1                        # wave number
-    sigma = 0.25                        # width of initial gaussian wave-packet
-    x0    = 3.0                        # center of initial gaussian wave-packet
-
-    A = 1.0 / (sigma * np.sqrt(np.pi)) # normalization constant
-
-    # Initial Wavefunction
-    return np.sqrt(A) * np.exp(-(x-x0)**2 / (2.0 * sigma**2)) * np.exp(1j * kx * x)
-
-
+# This function checks whether a given wavefunction is normalized or not.
 def IsNormalized(some_psi):
     sum = 0
     for i in range(x.size):
@@ -94,112 +108,78 @@ def IsNormalized(some_psi):
     return sum
 
 
-
-
-
-def CoherentEvolution():
-    A = AnnihilationMatrix()
-    val,vec=np.linalg.eig(A)
-    z = np.argsort(val)
-    coh = vec[:,z[0]]
-
-    #Evolution of coherent state
-    timesteps = 3600
-    fig = plt.figure(figsize=(12, 8))
-    for i in range(timesteps):
-        print("Drawing frame "+str(i)+" of "+str(timesteps))
-        currentTime = i*dt
-        #plt.plot (x, Potential(x)*0.01, "r--", label=r"$V(x)$")
-        plt.plot(x, np.abs(coh)**2, "b-", label=r"$|\Psi(x,t)|^2$")
-        #plt.ylim(0,0.005)
-        #plt.xlim(-15,15)
-        plt.xlabel("Position")
-        normalization=IsNormalized(coh)
-        plt.title('t = {:.4f}'.format(currentTime) + " s\n"+ 'normalization: {:.7f}'.format(normalization))
-        plt.legend()
-        fig.savefig('new_coherent'+str(i)+'.png')
-        plt.clf()
-        coh = Evolve(coh)
-
-
-def GaussianEvolution():
-    #Evolution of Gaussian wave packet
-    psi = Gaussian()
-    timesteps = 3000
-    fig = plt.figure(figsize=(12, 8))
-    for i in range(timesteps):
-        currentTime = i*dt
-        plt.plot (x, Potential(x)*0.01, "r--")
-        plt.plot(x, np.abs(psi)**2, "b-", label=r"$|\Psi_0(x,t)|^2$")
-        plt.ylim(0,5)
-        plt.xlim(-5,5)
-        plt.xlabel("Position")
-        normalization=IsNormalized(psi)
-        plt.title('t = {:.4f}'.format(currentTime) + " s\n"+ 'normalization: {:.7f}'.format(normalization))
-        fig.savefig('gaussian'+str(i)+'.png')
-        plt.clf()
-        psi = Evolve(psi)
-
-
-
-def GroundState():
+# This function returns the excited state wavefunction for the specified order.
+# order = 0 corresponds to the groundstate, order = 1 corresponds to the 1st
+# excited state vice versa.
+def ExcitedState(order):
     H = HMatrix()
     val,vec=np.linalg.eig(H)
     z = np.argsort(val)
-    z = z[0:4]
-    energies=(val[z]/val[z][0])
-    print(energies)
 
-
-    psi0 = vec[:,z[0]]
-    #psi1 = vec[:,z[1]]
-    
-    #Evolution of groundstate
-    timesteps = 500
-    fig = plt.figure(figsize=(12, 8))
-    for i in range(timesteps):
-        currentTime = i*dt
-        plt.plot (x, Potential(x)*0.01, "r--", label=r"$V(x)$")
-        plt.plot(x, np.abs(psi0)**2, "b-", label=r"$|\Psi_0(x,t)|^2$")
-        plt.ylim(0,0.1)
-        plt.xlim(-5,5)
-        plt.xlabel("Position")
-        normalization=IsNormalized(psi0)
-        plt.title('t = {:.4f}'.format(currentTime) + " s\n"+ 'normalization: {:.7f}'.format(normalization))
-        plt.legend()
-        fig.savefig('groundstate'+str(i)+'.png')
-        plt.clf()
-        psi0 = Evolve(psi0)
+    psi = vec[:,z[order]]
+    return psi
 
 
 
-def FirstExcited():
-    H = HMatrix()
-    val,vec=np.linalg.eig(H)
-    z = np.argsort(val)
-    z = z[0:4]
-    energies=(val[z]/val[z][0])
-    print(energies)
-    
-    #psi0 = vec[:,z[0]]
-    psi1 = vec[:,z[1]]
-    
-    #Evolution of first excited state
-    timesteps = 500
-    fig = plt.figure(figsize=(12, 8))
-    for i in range(timesteps):
-        currentTime = i*dt
-        plt.plot (x, Potential(x)*0.01, "r--", label=r"$V(x)$")
-        plt.plot(x, np.abs(psi1)**2, "b-", label=r"$|\Psi_1(x,t)|^2$")
-        plt.ylim(0,0.1)
-        plt.xlim(-5,5)
-        plt.xlabel("Position")
-        normalization=IsNormalized(psi1)
-        plt.title('t = {:.4f}'.format(currentTime) + " s\n"+ 'normalization: {:.7f}'.format(normalization))
-        plt.legend()
-        fig.savefig('firstexcited'+str(i)+'.png')
-        plt.clf()
-        psi1 = Evolve(psi1)
+# This function returns the coherent state wavefunction for the specified force
+# constant (k). k is obtained by multiplying the kappa with a scaling factor.
+def CoherentState(sf):
+    psi = ExcitedState(0)
+    k = kappa*sf
+    psi = np.exp(1j*k*x)*psi
+
+    return psi
 
 
 
+# 𝔻𝔼𝕄𝕆 𝕊𝔼ℂ𝕋𝕀𝕆ℕ
+
+timesteps = 3600
+
+coh1 = CoherentState(0.15)
+coh2 = CoherentState(0.05)
+coh3 = CoherentState(0.01)
+coh4 = CoherentState(0.005)
+
+
+fig = plt.figure(figsize=(16, 9), dpi=1920/16)
+for i in range(timesteps):
+    currentTime = i*dt
+    plt.title('t = {:.5f}'.format(currentTime) )
+
+    #Potential
+    plt.subplot(5, 1, 1)
+    plt.plot (x, Potential(x), "r--", label=r"$V(x)$")
+
+    # Coherent States with different force constants
+    plt.subplot(5, 1, 2)
+    k1 = 0.15*kappa
+    plt.plot(x, np.abs(coh1)**2, "b-", label=r"$|\Psi_1(x,t)|^2\;,\;k=$"+'{:.4f}'.format(k1))
+    plt.legend()
+
+    plt.subplot(5, 1, 3)
+    k2 = 0.05*kappa
+    plt.plot(x, np.abs(coh2)**2, "b-", label=r"$|\Psi_2(x,t)|^2\;,\;k=$"+'{:.4f}'.format(k2))
+    plt.legend()
+
+    plt.subplot(5, 1, 4)
+    k3 = 0.01*kappa
+    plt.plot(x, np.abs(coh3)**2, "b-", label=r"$|\Psi_3(x,t)|^2\;,\;k=$"+'{:.4f}'.format(k3))
+    plt.legend()
+
+    plt.subplot(5, 1, 5)
+    k4 = 0.005*kappa
+    plt.plot(x, np.abs(coh4)**2, "b-", label=r"$|\Psi_4(x,t)|^2\;,\;k=$"+'{:.4f}'.format(k4))
+    plt.legend()
+
+
+
+    plt.tight_layout()
+
+    fig.savefig('coherent_test'+str(i)+'.png')
+    plt.clf()
+
+    coh1 = Evolve(coh1)
+    coh2 = Evolve(coh2)
+    coh3 = Evolve(coh3)
+    coh4 = Evolve(coh4)
