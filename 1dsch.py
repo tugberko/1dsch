@@ -145,7 +145,7 @@ coh4 = CoherentState(0.005)
 fig = plt.figure(figsize=(16, 9), dpi=1920/16)
 for i in range(timesteps):
     currentTime = i*dt
-    plt.title('t = {:.5f}'.format(currentTime) )
+    plt.suptitle('t = {:.5f}'.format(currentTime) )
 
     #Potential
     plt.subplot(5, 1, 1)
