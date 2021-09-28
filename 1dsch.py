@@ -101,7 +101,7 @@ def Evolve(some_psi):
 
 
 # This function checks whether a given wavefunction is normalized or not.
-def IsNormalized(some_psi):
+def SquareSum(some_psi):
     sum = 0
     for i in range(x.size):
         sum += np.abs(some_psi[i])**2
@@ -119,8 +119,6 @@ def ExcitedState(order):
     psi = vec[:,z[order]]
     return psi
 
-
-
 # This function returns the coherent state wavefunction for the specified force
 # constant (k). k is obtained by multiplying the kappa with a scaling factor.
 def CoherentState(sf):
@@ -130,18 +128,37 @@ def CoherentState(sf):
 
     return psi
 
+# This is an implementation of Eqn. 14 in 
+# https://www.overleaf.com/project/614c914c7242ebd307c3b49c
+def AnalyticInitial():
+    psi = np.zeros((x.size))
+    for i in range(x.size):
+        psi[i] = (np.pi**(-0.25))*np.exp(-0.25*(x[i]**2))
+
+    return psi
+
 
 
 # 𝔻𝔼𝕄𝕆 𝕊𝔼ℂ𝕋𝕀𝕆ℕ
 
-timesteps = 3600
+numericalGroundstate = ExcitedState(0)
+analyticalGroundstate = AnalyticInitial()
 
-coh1 = CoherentState(0.15)
-coh2 = CoherentState(0.05)
-coh3 = CoherentState(0.01)
-coh4 = CoherentState(0.005)
+print("Numerical groudstate: " + str(SquareSum(numericalGroundstate)))
+print("Analytical groudstate: " + str(SquareSum(analyticalGroundstate))) 
+#Potential
+plt.subplot(2, 1, 1)
+plt.plot (x, np.abs(numericalGroundstate)**2, "r--", label=r"$|\Psi(x,t=0)|^2\;,\;numerical$")
+
+plt.subplot(2, 1, 2)
+plt.plot (x, np.abs(analyticalGroundstate)**2, "r--", label=r"$|\Psi(x,t=0)|^2\;,\;numerical$")
+
+plt.show()
 
 
+
+
+"""
 fig = plt.figure(figsize=(16, 9), dpi=1920/16)
 for i in range(timesteps):
     currentTime = i*dt
@@ -183,3 +200,4 @@ for i in range(timesteps):
     coh2 = Evolve(coh2)
     coh3 = Evolve(coh3)
     coh4 = Evolve(coh4)
+"""
