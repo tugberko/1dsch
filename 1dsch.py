@@ -133,7 +133,7 @@ def CoherentState(sf):
 def AnalyticInitial():
     psi = np.zeros((x.size))
     for i in range(x.size):
-        psi[i] = (np.pi**(-0.25))*np.exp(-0.25*(x[i]**2))
+        psi[i] = (np.pi**(-0.25))*np.exp(-0.5*(x[i]**2))
 
     return psi
 
@@ -144,8 +144,9 @@ def AnalyticInitial():
 numericalGroundstate = ExcitedState(0)
 analyticalGroundstate = AnalyticInitial()
 
-print("Numerical groudstate: " + str(SquareSum(numericalGroundstate)))
-print("Analytical groudstate: " + str(SquareSum(analyticalGroundstate))) 
+print("Numerical groundstate: " + str(SquareSum(numericalGroundstate)))
+print("Analytical groundstate: " +
+        str(SquareSum(analyticalGroundstate)/L)) 
 #Potential
 plt.subplot(2, 1, 1)
 plt.plot (x, np.abs(numericalGroundstate)**2, "r--", label=r"$|\Psi(x,t=0)|^2\;,\;numerical$")
