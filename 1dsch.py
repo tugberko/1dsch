@@ -2,6 +2,7 @@
 import scipy.sparse
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.linalg as la
 
 
 
@@ -9,19 +10,19 @@ import numpy as np
 
 dt = 1e-3   # Temporal seperation
 
-n= 1000  # Spatial grid points
+n= 5  # Spatial grid points
 
-L = 50      # Spatial size, symmetric with respect to x=0
+L = 50     # Spatial size, symmetric with respect to x=0
 
 # Derived Simulation Parameters
 
-dx = L/n # Spatial seperation
+dx = L/(n-1) # Spatial seperation
 
 halfdt = dt*0.5 # Name says it all
 
 kappa = 2*(np.pi)/dx # Upper limit for force constant (k).
 
-x = np.arange(-0.5*L, 0.5*L, dx)    # Spatial grid points
+x = np.linspace(-0.5*L, 0.5*L, n)    # Spatial grid points
 
 
 
@@ -55,7 +56,7 @@ def TMatrix():
     for i in range(x.size-1):
         result[i][i+1]=1
         result[i+1][i]=1
-    return (-1/dx**2) * result
+    return (-1/(dx**2)) * result
 
 # This function outputs a matrix representing the potential
 # energy part of the Hamiltonian (Eqn.13).
@@ -65,6 +66,8 @@ def VMatrix():
         result[i][i]=Potential(x[i])
     return result
 
+# This function returns a Hamiltonian matrix compatible with
+# the wavefunction.
 def HMatrix():
     return TMatrix() + VMatrix()
 
@@ -117,13 +120,10 @@ def SquareSum(psi):
 # excited state vice versa.
 def ExcitedState(order):
     H = HMatrix()
-    val,vec=np.linalg.eig(H)
+    val,vec=la.eig(H)
     z = np.argsort(val)
 
     psi = vec[:,z[order]]
-
-    rescale_by = np.sqrt(1/SquareSum(psi))
-    psi = rescale_by*psi
 
     return psi
 
@@ -145,19 +145,24 @@ def AnalyticalInitial():
 
     return psi
 
-
+# This function calculates the overlap between two wavefunctions.
 def Overlap(psi1, psi2):
     overlap = 0
     for i in range(x.size):
         overlap += psi1[i]*psi2[i]*dx
     return overlap
 
+def NormalizeWavefunction(some_psi):
+    rescale_by = (1/SquareSum(some_psi))**0.5
+    return rescale_by*some_psi
 
 # 𝔻𝔼𝕄𝕆 𝕊𝔼ℂ𝕋𝕀𝕆ℕ
 
-numericalGroundstate = ExcitedState(0)
-analyticalGroundstate = AnalyticalInitial()
+numericalGroundstate = NormalizeWavefunction(ExcitedState(0))
+analyticalGroundstate = NormalizeWavefunction(AnalyticalInitial())
 
+
+print(HMatrix())
 
 
 print("Numerical groundstate: " + str(SquareSum(numericalGroundstate)))
@@ -166,16 +171,12 @@ print("Analytical groundstate: " + str(SquareSum(analyticalGroundstate)))
 ov = Overlap(numericalGroundstate, analyticalGroundstate)
 
 print("Overlap: " + str(ov) + " for n:" + str(n))
-#Potential
-plt.subplot(2, 1, 1)
-plt.gca().set_title('Numerical')
+
 plt.ylim(0,0.6)
+plt.title("Overlap: "+ str(ov)+" (n=" + str(n) + ")")
 plt.plot (x, np.abs(numericalGroundstate)**2, "r--", label=r"$|\Psi(x,t=0)|^2\;,\;numerical$")
-
-plt.subplot(2, 1, 2)
-plt.gca().set_title('Analytical')
-plt.ylim(0,0.6)
-plt.plot (x, np.abs(analyticalGroundstate)**2, "r--", label=r"$|\Psi(x,t=0)|^2\;,\;analytical$")
-
+plt.plot (x, np.abs(analyticalGroundstate)**2, "b-", label=r"$|\Psi(x,t=0)|^2\;,\;analytical$")
+plt.xlim(-5,5)
+plt.legend()
+plt.grid()
 plt.show()
-
