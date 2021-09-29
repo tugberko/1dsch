@@ -9,17 +9,21 @@ import numpy as np
 
 dt = 1e-3   # Temporal seperation
 
-dx = 2e-2   # Spatial seperation
+n= 1000  # Spatial grid points
 
 L = 50      # Spatial size, symmetric with respect to x=0
 
 # Derived Simulation Parameters
+
+dx = L/n # Spatial seperation
 
 halfdt = dt*0.5 # Name says it all
 
 kappa = 2*(np.pi)/dx # Upper limit for force constant (k).
 
 x = np.arange(-0.5*L, 0.5*L, dx)    # Spatial grid points
+
+
 
 
 
@@ -100,11 +104,11 @@ def Evolve(some_psi):
     return np.matmul(U, some_psi)
 
 
-# This function checks whether a given wavefunction is normalized or not.
-def SquareSum(some_psi):
+# This function evaluates the normalization integral.
+def SquareSum(psi):
     sum = 0
     for i in range(x.size):
-        sum += np.abs(some_psi[i])**2
+        sum += dx * np.abs(psi[i])**2
     return sum
 
 
@@ -117,6 +121,10 @@ def ExcitedState(order):
     z = np.argsort(val)
 
     psi = vec[:,z[order]]
+
+    rescale_by = np.sqrt(1/SquareSum(psi))
+    psi = rescale_by*psi
+
     return psi
 
 # This function returns the coherent state wavefunction for the specified force
@@ -128,9 +136,9 @@ def CoherentState(sf):
 
     return psi
 
-# This is an implementation of Eqn. 14 in 
+# This is an implementation of Eqn. 14 in
 # https://www.overleaf.com/project/614c914c7242ebd307c3b49c
-def AnalyticInitial():
+def AnalyticalInitial():
     psi = np.zeros((x.size))
     for i in range(x.size):
         psi[i] = (np.pi**(-0.25))*np.exp(-0.5*(x[i]**2))
@@ -138,67 +146,36 @@ def AnalyticInitial():
     return psi
 
 
+def Overlap(psi1, psi2):
+    overlap = 0
+    for i in range(x.size):
+        overlap += psi1[i]*psi2[i]*dx
+    return overlap
+
 
 # 𝔻𝔼𝕄𝕆 𝕊𝔼ℂ𝕋𝕀𝕆ℕ
 
 numericalGroundstate = ExcitedState(0)
-analyticalGroundstate = AnalyticInitial()
+analyticalGroundstate = AnalyticalInitial()
+
+
 
 print("Numerical groundstate: " + str(SquareSum(numericalGroundstate)))
-print("Analytical groundstate: " +
-        str(SquareSum(analyticalGroundstate)*dx)) 
+print("Analytical groundstate: " + str(SquareSum(analyticalGroundstate)))
+
+ov = Overlap(numericalGroundstate, analyticalGroundstate)
+
+print("Overlap: " + str(ov) + " for n:" + str(n))
 #Potential
 plt.subplot(2, 1, 1)
+plt.gca().set_title('Numerical')
+plt.ylim(0,0.6)
 plt.plot (x, np.abs(numericalGroundstate)**2, "r--", label=r"$|\Psi(x,t=0)|^2\;,\;numerical$")
 
 plt.subplot(2, 1, 2)
-plt.plot (x, np.abs(analyticalGroundstate)**2, "r--", label=r"$|\Psi(x,t=0)|^2\;,\;numerical$")
+plt.gca().set_title('Analytical')
+plt.ylim(0,0.6)
+plt.plot (x, np.abs(analyticalGroundstate)**2, "r--", label=r"$|\Psi(x,t=0)|^2\;,\;analytical$")
 
 plt.show()
 
-
-
-
-"""
-fig = plt.figure(figsize=(16, 9), dpi=1920/16)
-for i in range(timesteps):
-    currentTime = i*dt
-    plt.suptitle('t = {:.5f}'.format(currentTime) )
-
-    #Potential
-    plt.subplot(5, 1, 1)
-    plt.plot (x, Potential(x), "r--", label=r"$V(x)$")
-
-    # Coherent States with different force constants
-    plt.subplot(5, 1, 2)
-    k1 = 0.15*kappa
-    plt.plot(x, np.abs(coh1)**2, "b-", label=r"$|\Psi_1(x,t)|^2\;,\;k=$"+'{:.4f}'.format(k1))
-    plt.legend()
-
-    plt.subplot(5, 1, 3)
-    k2 = 0.05*kappa
-    plt.plot(x, np.abs(coh2)**2, "b-", label=r"$|\Psi_2(x,t)|^2\;,\;k=$"+'{:.4f}'.format(k2))
-    plt.legend()
-
-    plt.subplot(5, 1, 4)
-    k3 = 0.01*kappa
-    plt.plot(x, np.abs(coh3)**2, "b-", label=r"$|\Psi_3(x,t)|^2\;,\;k=$"+'{:.4f}'.format(k3))
-    plt.legend()
-
-    plt.subplot(5, 1, 5)
-    k4 = 0.005*kappa
-    plt.plot(x, np.abs(coh4)**2, "b-", label=r"$|\Psi_4(x,t)|^2\;,\;k=$"+'{:.4f}'.format(k4))
-    plt.legend()
-
-
-
-    plt.tight_layout()
-
-    fig.savefig('coherent_test'+str(i)+'.png')
-    plt.clf()
-
-    coh1 = Evolve(coh1)
-    coh2 = Evolve(coh2)
-    coh3 = Evolve(coh3)
-    coh4 = Evolve(coh4)
-"""
