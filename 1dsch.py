@@ -146,7 +146,7 @@ analyticalGroundstate = AnalyticInitial()
 
 print("Numerical groundstate: " + str(SquareSum(numericalGroundstate)))
 print("Analytical groundstate: " +
-        str(SquareSum(analyticalGroundstate)/L)) 
+        str(SquareSum(analyticalGroundstate)*dx)) 
 #Potential
 plt.subplot(2, 1, 1)
 plt.plot (x, np.abs(numericalGroundstate)**2, "r--", label=r"$|\Psi(x,t=0)|^2\;,\;numerical$")
