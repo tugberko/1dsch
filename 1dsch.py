@@ -10,7 +10,7 @@ import scipy.linalg as la
 
 dt = 1e-3   # Temporal seperation
 
-n= 5  # Spatial grid points
+n= 501  # Spatial grid points
 
 L = 50     # Spatial size, symmetric with respect to x=0
 
