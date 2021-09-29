@@ -56,7 +56,7 @@ def TMatrix():
     for i in range(x.size-1):
         result[i][i+1]=1
         result[i+1][i]=1
-    return (-1/(dx**2)) * result
+    return (-1/(2*(dx**2))) * result
 
 # This function outputs a matrix representing the potential
 # energy part of the Hamiltonian (Eqn.13).
