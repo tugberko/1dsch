@@ -8,15 +8,18 @@ import scipy.linalg as la
 
 # Simulation Parameters
 
-dt = 1e-3   # Temporal seperation
+dt = 1e-2   # Temporal seperation
 
-n= 501  # Spatial grid points
+n= 1001 # Spatial grid points
 
 L = 50     # Spatial size, symmetric with respect to x=0
 
 # Derived Simulation Parameters
 
 dx = L/(n-1) # Spatial seperation
+
+print("dx = " + str(dx) +"\n")
+print("1/(dx^2) = " + str(1/(dx**2)) +"\n")
 
 halfdt = dt*0.5 # Name says it all
 
@@ -25,6 +28,7 @@ kappa = 2*(np.pi)/dx # Upper limit for force constant (k).
 x = np.linspace(-0.5*L, 0.5*L, n)    # Spatial grid points
 
 
+k = L / 50
 
 
 
@@ -127,56 +131,98 @@ def ExcitedState(order):
 
     return psi
 
-# This function returns the coherent state wavefunction for the specified force
-# constant (k). k is obtained by multiplying the kappa with a scaling factor.
-def CoherentState(sf):
-    psi = ExcitedState(0)
-    k = kappa*sf
-    psi = np.exp(1j*k*x)*psi
-
-    return psi
 
 # This is an implementation of Eqn. 14 in
 # https://www.overleaf.com/project/614c914c7242ebd307c3b49c
-def AnalyticalInitial():
-    psi = np.zeros((x.size))
+def GroundStateExact():
+    psi = np.zeros((x.size),dtype=complex)
     for i in range(x.size):
         psi[i] = (np.pi**(-0.25))*np.exp(-0.5*(x[i]**2))
 
     return psi
 
+
+# This function returns the coherent state wavefunction for the specified force
+# constant (k).
+def CoherentStateNumerical():
+    gs = ExcitedState(0)
+    psi = np.zeros((x.size),dtype=complex)
+
+    for i in range(x.size):
+        psi[i] = np.exp(1j*k*x[i]) * gs[i]
+
+    return psi
+
+
+# Exact solution of the coherent state
+def CoherentStateExact(t):
+    return ((1/np.pi)**(0.25)) * np.exp(   -0.5 * (x-k*np.sin(t))**2   ) * np.exp(1j*k*np.cos(t))
+
+
 # This function calculates the overlap between two wavefunctions.
 def Overlap(psi1, psi2):
     overlap = 0
     for i in range(x.size):
-        overlap += psi1[i]*psi2[i]*dx
+        overlap += psi1[i]*np.conj(psi2[i])*dx
     return overlap
 
+# This function normalizes a given wavefunction
 def NormalizeWavefunction(some_psi):
     rescale_by = (1/SquareSum(some_psi))**0.5
     return rescale_by*some_psi
 
+
+
+
 # 𝔻𝔼𝕄𝕆 𝕊𝔼ℂ𝕋𝕀𝕆ℕ
 
-numericalGroundstate = NormalizeWavefunction(ExcitedState(0))
-analyticalGroundstate = NormalizeWavefunction(AnalyticalInitial())
+def PsiSquares():
+    #timesteps = 1
+    l_over_k = L/k
+
+    psi_num = NormalizeWavefunction(CoherentStateNumerical())
+    psi_exact = NormalizeWavefunction(CoherentStateExact(0))
+
+    ov = Overlap(psi_num, psi_exact)
+    plt.plot(x, np.abs(psi_num)**2, "b-", label=r"$|\Psi(x,t)|^2\;(numerical)$")
+    plt.plot(x, np.abs(psi_exact)**2, "r--", label=r"$|\Psi(x,t)|^2\;(exact)$")
+    plt.legend()
+    plt.grid()
+    plt.title( '    Overlap = {:.8f}'.format(np.abs(ov)) + '    L/k = {:.2f}'.format(l_over_k))
+    plt.show()
 
 
-print(HMatrix())
+def PsiReals():
+    #timesteps = 1
+    l_over_k = L/k
+
+    psi_num = NormalizeWavefunction(CoherentStateNumerical())
+    psi_exact = NormalizeWavefunction(CoherentStateExact(0))
+
+    ov = Overlap(psi_num, psi_exact)
+    plt.plot(x, np.real(psi_num)**2, "b-", label=r"$\Re[\Psi(x,t)]\;(numerical)$")
+    plt.plot(x, np.real(psi_exact)**2, "r--", label=r"$\Re[\Psi(x,t)]\;(exact)$")
+    plt.legend()
+    plt.grid()
+    plt.title( '    Overlap = {:.8f}'.format(np.abs(ov)) + '    L/k = {:.2f}'.format(l_over_k))
+    plt.show()
 
 
-print("Numerical groundstate: " + str(SquareSum(numericalGroundstate)))
-print("Analytical groundstate: " + str(SquareSum(analyticalGroundstate)))
+def PsiImags():
+    #timesteps = 1
+    l_over_k = L/k
 
-ov = Overlap(numericalGroundstate, analyticalGroundstate)
+    psi_num = NormalizeWavefunction(CoherentStateNumerical())
+    psi_exact = NormalizeWavefunction(CoherentStateExact(0))
 
-print("Overlap: " + str(ov) + " for n:" + str(n))
+    ov = Overlap(psi_num, psi_exact)
+    plt.plot(x, np.imag(psi_num)**2, "b-", label=r"$\Im[\Psi(x,t)]\;(numerical)$")
+    plt.plot(x, np.imag(psi_exact)**2, "r--", label=r"$\Im[\Psi(x,t)]\;(exact)$")
+    plt.legend()
+    plt.grid()
+    plt.title( '    Overlap = {:.8f}'.format(np.abs(ov)) + '    L/k = {:.2f}'.format(l_over_k))
+    plt.show()
 
-plt.ylim(0,0.6)
-plt.title("Overlap: "+ str(ov)+" (n=" + str(n) + ")")
-plt.plot (x, np.abs(numericalGroundstate)**2, "r--", label=r"$|\Psi(x,t=0)|^2\;,\;numerical$")
-plt.plot (x, np.abs(analyticalGroundstate)**2, "b-", label=r"$|\Psi(x,t=0)|^2\;,\;analytical$")
-plt.xlim(-5,5)
-plt.legend()
-plt.grid()
-plt.show()
+#PsiSquares()
+PsiReals()
+#PsiImags()
