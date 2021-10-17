@@ -1,0 +1,21 @@
+set encoding utf8
+
+set grid
+
+set logscale y 10
+
+set format y "10^{%L}"
+
+set xlabel "Time [s]"
+set ylabel "Error"
+set title "Error vs. Time"
+
+set key bottom right opaque Left 
+
+set xtics ("0" 0, "2π" 2*pi , "4π" 4*pi , "6π" 6*pi , "8π" 8*pi , "10π" 10*pi , "12π" 12*pi , "14π" 14*pi , "16π" 16*pi , "18π" 18*pi, "20π" 20*pi)
+
+plot  'l_over_k50.dat' with lines title 'L / k = 50' , \
+      'l_over_k100.dat' with lines title 'L / k = 100' , \
+      'l_over_k200.dat' with lines title 'L / k = 200'  , \
+      'l_over_k400.dat' with lines title 'L / k = 400' , \
+      'l_over_k1000.dat' with lines title 'L / k = 1000'
