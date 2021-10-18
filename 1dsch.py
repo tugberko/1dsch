@@ -3,6 +3,9 @@ import scipy.sparse
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.linalg as la
+import math
+import datetime
+
 
 
 
@@ -28,7 +31,7 @@ kappa = 2*(np.pi)/dx # Upper limit for force constant (k).
 x = np.linspace(-0.5*L, 0.5*L, n)    # Spatial grid points
 
 
-k = L / 50
+k = L / 200
 
 
 
@@ -146,17 +149,14 @@ def GroundStateExact():
 # constant (k).
 def CoherentStateNumerical():
     gs = ExcitedState(0)
-    psi = np.zeros((x.size),dtype=complex)
+    psi = gs * np.exp(1j*k*x)
 
-    for i in range(x.size):
-        psi[i] = np.exp(1j*k*x[i]) * gs[i]
-
-    return psi
+    return -psi
 
 
 # Exact solution of the coherent state
 def CoherentStateExact(t):
-    return ((1/np.pi)**(0.25)) * np.exp(   -0.5 * (x-k*np.sin(t))**2   ) * np.exp(1j*k*np.cos(t))
+    return ((1/np.pi)**(0.25)) * np.exp(   -0.5 * (x-k*np.sin(t))**2   ) * np.exp(1j*k*x*np.cos(t))
 
 
 # This function calculates the overlap between two wavefunctions.
@@ -174,55 +174,49 @@ def NormalizeWavefunction(some_psi):
 
 
 
+
+
+
+
+
+
 # 𝔻𝔼𝕄𝕆 𝕊𝔼ℂ𝕋𝕀𝕆ℕ
 
-def PsiSquares():
-    #timesteps = 1
-    l_over_k = L/k
 
-    psi_num = NormalizeWavefunction(CoherentStateNumerical())
-    psi_exact = NormalizeWavefunction(CoherentStateExact(0))
+terminateAt = 20 * np.pi
+timesteps = math.ceil(terminateAt / dt)
 
-    ov = Overlap(psi_num, psi_exact)
-    plt.plot(x, np.abs(psi_num)**2, "b-", label=r"$|\Psi(x,t)|^2\;(numerical)$")
-    plt.plot(x, np.abs(psi_exact)**2, "r--", label=r"$|\Psi(x,t)|^2\;(exact)$")
-    plt.legend()
-    plt.grid()
-    plt.title( '    Overlap = {:.8f}'.format(np.abs(ov)) + '    L/k = {:.2f}'.format(l_over_k))
-    plt.show()
+currentDate  = datetime.datetime.now()
 
+l_over_k = L/k
 
-def PsiReals():
-    #timesteps = 1
-    l_over_k = L/k
+filename = 'run.dat'
 
-    psi_num = NormalizeWavefunction(CoherentStateNumerical())
-    psi_exact = NormalizeWavefunction(CoherentStateExact(0))
+with open(filename, 'a') as f:
+    f.write('# Simulation started at ' + str(currentDate) + '\n')
+    f.write('#\n')
+    f.write('# Simulation details: \n')
+    f.write('# L / k = ' + str(l_over_k) + ' \n')
+    f.write('# dt = ' + str(dt) + ' s \n')
+    f.write('# dx = ' + str(dx) + ' \n')
+    f.write('# Spatial grid points : ' + str(n) + ' \n')
+    f.write('#\n')
+    f.write('# time\terror\n')
 
-    ov = Overlap(psi_num, psi_exact)
-    plt.plot(x, np.real(psi_num)**2, "b-", label=r"$\Re[\Psi(x,t)]\;(numerical)$")
-    plt.plot(x, np.real(psi_exact)**2, "r--", label=r"$\Re[\Psi(x,t)]\;(exact)$")
-    plt.legend()
-    plt.grid()
-    plt.title( '    Overlap = {:.8f}'.format(np.abs(ov)) + '    L/k = {:.2f}'.format(l_over_k))
-    plt.show()
+psi_num = NormalizeWavefunction(CoherentStateNumerical())
 
+for i in range(timesteps):
+    currentTime = i*dt
+    psi_exact = NormalizeWavefunction(CoherentStateExact(currentTime))
+    error = 1 - Overlap(psi_num, psi_exact)
 
-def PsiImags():
-    #timesteps = 1
-    l_over_k = L/k
+    ov = np.abs(Overlap(psi_exact, psi_num))
 
-    psi_num = NormalizeWavefunction(CoherentStateNumerical())
-    psi_exact = NormalizeWavefunction(CoherentStateExact(0))
+    error = 1 - ov
 
-    ov = Overlap(psi_num, psi_exact)
-    plt.plot(x, np.imag(psi_num)**2, "b-", label=r"$\Im[\Psi(x,t)]\;(numerical)$")
-    plt.plot(x, np.imag(psi_exact)**2, "r--", label=r"$\Im[\Psi(x,t)]\;(exact)$")
-    plt.legend()
-    plt.grid()
-    plt.title( '    Overlap = {:.8f}'.format(np.abs(ov)) + '    L/k = {:.2f}'.format(l_over_k))
-    plt.show()
+    with open(filename, 'a') as f:
+        f.write(str(currentTime)+'\t'+str(error)+'\n')
 
-#PsiSquares()
-PsiReals()
-#PsiImags()
+    psi_num = Evolve(psi_num)
+
+print('FIN')
