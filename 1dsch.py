@@ -27,6 +27,7 @@ dx = L/N
 x=arange(-L/2,L/2,dx)
 
 
+# This function generates the momentum space grid.
 def GenerateMomentumSpace():
     dk = (2*pi/L)
     k = zeros(N)
@@ -49,8 +50,7 @@ ksq = k**2
 
 
 
-# This function takes size (n) and seperation (dx) as Parameters
-# and produces a discrete 1D Laplacian matrix.
+# This function produces a discrete 1D Laplacian matrix compatible with wavefunction.
 def laplacian1D():
     result = np.zeros((N, N))
     for i in range(N):
@@ -61,12 +61,13 @@ def laplacian1D():
     return 1/(dx**2) * result
 
 # This function outputs a matrix representing the kinetic
-# energy part of the Hamiltonian (Eqn.13).
+# energy part of the Hamiltonian.
 def TMatrix():
     return -0.5 * laplacian1D()
 
 
-# This function calculates the potential energy at specified position.
+# This function generates an array of potential energies corresponding to the
+# position space.
 def Potential():
     pot = np.zeros_like(x)
     for i in range(N):
@@ -75,7 +76,7 @@ def Potential():
 
 
 # This function outputs a matrix representing the potential
-# energy part of the Hamiltonian (Eqn.13).
+# energy part of the Hamiltonian.
 def VMatrix():
     return np.diag(Potential())
 
@@ -83,9 +84,11 @@ def VMatrix():
 def TMatrix():
     return -0.5 * laplacian1D()
 
+# This function creates a Hamiltonian matrix.
 def HMatrix():
     return TMatrix() + VMatrix()
 
+# This function creates the time evolution matrix (U) for Crank-Nicholson method.
 def InitializeCrankNicholsonU():
     lhs = la.expm(1j * HMatrix() * halfdt)
     rhs = la.expm(-1j * HMatrix() * halfdt)
@@ -94,6 +97,7 @@ def InitializeCrankNicholsonU():
 
 UCN = InitializeCrankNicholsonU()
 
+# This function performs Crank-Nicholson time evolution
 def EvolveCrankNicholson(some_psi):
     return np.matmul(UCN, some_psi)
 
@@ -101,6 +105,8 @@ def EvolveCrankNicholson(some_psi):
 
 V = VMatrix()
 
+
+# This function performs split step fourier time evolution.
 def EvolveSplitStep(some_psi):
     # Refer to: https://www.overleaf.com/7461894969pxkgqkzvmdws
 
@@ -125,12 +131,18 @@ def CoherentStateExact(t):
     k=1
     return ((1/np.pi)**(0.25)) * np.exp(   -0.5 * (x-k*np.sin(t))**2   ) * np.exp(1j*k*x*np.cos(t))
 
+# This function calculates the overlap between two wavefunctions.
 def Overlap(psi1, psi2):
     overlap = 0
     for i in range(x.size):
         overlap += psi1[i] * np.conj(psi2[i]) * dx
     return np.abs(overlap)
 
+
+
+
+
+# DEMO SECTION
 
 psi_num_splitstep = CoherentStateExact(0)
 psi_num_cn = CoherentStateExact(0)
